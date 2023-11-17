@@ -1,0 +1,5 @@
+imgui[glfw]
+numpy
+pillow
+tomli
+pyserial

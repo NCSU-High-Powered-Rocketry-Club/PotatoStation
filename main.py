@@ -13,14 +13,17 @@ args = parser.parse_args()
 
 
 def main(args):
-    ui = KrakenInterface("Cool UI window", 1280, 720)
+    ui = KrakenInterface("Cool UI window", 1280, 720, args.port)
 
     # rough framerate, should be slightly higher due to render time
     FRAMERATE = 90
 
     while not ui.should_close:
-        ui.update()
-        time.sleep(1.0/FRAMERATE)
+        try:
+            ui.update()
+            time.sleep(1.0/FRAMERATE)
+        except KeyboardInterrupt:
+            break
 
     ui.shutdownGUI()
 

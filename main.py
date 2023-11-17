@@ -1,4 +1,5 @@
 import argparse
+from Kraken import KrakenInterface
 
 msg = "Very Cool Ground Station Software"
 
@@ -11,7 +12,12 @@ args = parser.parse_args()
 
 
 def main(args):
-    pass
+    ui = KrakenInterface("Cool UI window", 1280, 720)
+
+    while not ui.should_close:
+        ui.update()
+
+    ui.shutdownGUI()
 
 
 if __name__ == "__main__":

@@ -15,6 +15,8 @@ class MainInterface(GLFWImguiWrapper):
 
         # Enable moving around with the keyboard
         self.io.config_flags |= imgui.CONFIG_NAV_ENABLE_KEYBOARD
+        self.io.ini_file_name = "".encode()
+
         style_file = os.path.join(
             os.path.dirname(__file__), 'styles', 'dark_style.toml')
 
@@ -61,7 +63,7 @@ class MainInterface(GLFWImguiWrapper):
         )
 
         self.rocket_logo.draw()
-        imgui.show_test_window()
+        # imgui.show_test_window()
 
         version_flags = imgui.WINDOW_ALWAYS_AUTO_RESIZE | imgui.WINDOW_NO_DECORATION | imgui.WINDOW_NO_INPUTS
         version_flags |= imgui.WINDOW_NO_BACKGROUND | imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_NAV

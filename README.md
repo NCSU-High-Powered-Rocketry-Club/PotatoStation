@@ -1,4 +1,4 @@
-# Potato-Station Ground Control System
+# PotatoStation Ground Control System
 
 This is the repository for the PotatoStation ground control software, which is a multi-purpose
 ground control GUI slash control system for a variety of payloads for the NASA Student Launch Challenge.

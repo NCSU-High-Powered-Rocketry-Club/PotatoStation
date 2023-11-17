@@ -1,4 +1,4 @@
-import os
+from importlib import resources as impresource
 import platform
 
 from .ui_utils.wrapper import GLFWImguiWrapper
@@ -17,19 +17,18 @@ class MainInterface(GLFWImguiWrapper):
         self.io.config_flags |= imgui.CONFIG_NAV_ENABLE_KEYBOARD
         self.io.ini_file_name = "".encode()
 
-        style_file = os.path.join(
-            os.path.dirname(__file__), 'styles', 'dark_style.toml')
+        resources = impresource.files(__package__)
+
+        style_file = str(resources.joinpath('styles', 'dark_style.toml'))
 
         styleGUI(style_file)
 
         if font_path is None:
-            font_path = os.path.join(
-                os.path.dirname(__file__), 'fonts', 'main.ttf')
+            font_path = str(resources.joinpath('fonts', 'main.ttf'))
 
         self.setup_main_font(font_path, font_size, scaling_factor)
 
-        icon_font_path = os.path.join(
-            os.path.dirname(__file__), 'fonts', 'icons.ttf')
+        icon_font_path = str(resources.joinpath('fonts', 'icons.ttf'))
         custom_glyph_start = ord("\ue900")
         custom_glyph_end = ord("\uEAEE")
         custom_glyph_range = imgui.GlyphRanges(
@@ -40,8 +39,8 @@ class MainInterface(GLFWImguiWrapper):
         self.icon_font = self.add_extra_font(
             icon_font_path, font_size, font_config=config, glyph_ranges=custom_glyph_range)
 
-        rocket_logo_path = os.path.join(
-            os.path.dirname(__file__), 'assets', 'gray_rocket_logo.png')
+        rocket_logo_path = str(
+            resources.joinpath('assets', 'gray_rocket_logo.png'))
 
         self.rocket_logo = widgets.BackgroundImage(rocket_logo_path)
         rocket_scale = 0.3  # (height/self.rocket_logo.image.height) * 0.01

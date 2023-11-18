@@ -18,14 +18,16 @@ def main(args):
     # rough framerate, should be slightly higher due to render time
     FRAMERATE = 90
 
-    while not ui.should_close:
-        try:
+    try:
+        while not ui.should_close:
             ui.update()
             time.sleep(1.0/FRAMERATE)
-        except KeyboardInterrupt:
-            break
 
-    ui.shutdownGUI()
+    except KeyboardInterrupt:
+        pass
+
+    finally:
+        ui.shutdownGUI()
 
 
 if __name__ == "__main__":

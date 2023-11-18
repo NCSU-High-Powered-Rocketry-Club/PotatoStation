@@ -37,7 +37,10 @@ class MainInterface(GLFWImguiWrapper):
         config = imgui.core.FontConfig(merge_mode=False)
 
         self.icon_font = self.add_extra_font(
-            icon_font_path, font_size, font_config=config, glyph_ranges=custom_glyph_range)
+            icon_font_path, font_size*1.3, font_config=config, glyph_ranges=custom_glyph_range)
+
+        self.bigger_icon_font = self.add_extra_font(
+            icon_font_path, font_size*6.5, font_config=config, glyph_ranges=custom_glyph_range)
 
         rocket_logo_path = str(
             resources.joinpath('assets', 'gray_rocket_logo.png'))

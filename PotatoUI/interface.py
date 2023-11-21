@@ -6,18 +6,24 @@ from .ui_utils.gui_style import styleGUI
 from .ui_utils import widgets
 
 import imgui
+import glfw
+from PIL import Image
 
 
 class MainInterface(GLFWImguiWrapper):
 
-    def __init__(self, name: str, width: int, height: int, font_path=None, font_size=14, scaling_factor=1):
-        super().__init__(name, width, height, font_path, font_size, scaling_factor)
+    def __init__(self, name: str, width: int, height: int, font_path=None, font_size=14, scaling_factor=1, **kwargs):
+        super().__init__(name, width, height, font_path, font_size, scaling_factor, **kwargs)
 
         # Enable moving around with the keyboard
         self.io.config_flags |= imgui.CONFIG_NAV_ENABLE_KEYBOARD
         self.io.ini_file_name = "".encode()
 
         resources = impresource.files(__package__)
+
+        icon = Image.open(resources.joinpath('assets', 'icon.png'))
+
+        glfw.set_window_icon(self.glfw_window, 1, icon)
 
         style_file = str(resources.joinpath('styles', 'dark_style.toml'))
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import numpy as np
 import imgui
 from PotatoUI import GUIWindow
 
@@ -37,7 +38,9 @@ class SerialWindow(GUIWindow):
 
         imgui.push_item_width(-1)
         enter, self.serial_input_text = imgui.input_text_with_hint(
-            "##SerialEntry", "Send something (Enter)", self.serial_input_text, flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE)
+            "##SerialEntry", "Send something (Enter)", self.serial_input_text,
+            buffer_length=-1, flags=imgui.INPUT_TEXT_ENTER_RETURNS_TRUE
+        )
 
         if enter:
             self.just_sent = True
@@ -54,6 +57,8 @@ class ButtonPanel(GUIWindow):
         flags |= imgui.WINDOW_ALWAYS_AUTO_RESIZE
         flags |= imgui.WINDOW_NO_BACKGROUND
         flags |= imgui.WINDOW_NO_DECORATION
+        flags |= imgui.WINDOW_NO_MOVE
+        flags |= imgui.WINDOW_NO_BRING_TO_FRONT_ON_FOCUS
 
         super().__init__("ButtonPanel", io, closable, flags)
         self.pushed = False
@@ -95,3 +100,40 @@ class ButtonPanel(GUIWindow):
                     deploy = imgui.button("\ue9b9###DeployButton", 200, 200)
                     if deploy:
                         self.interface.send_data("deploy")
+
+
+class PlotWindow(GUIWindow):
+
+    MAX_PLOT_VALUES = 700
+
+    def __init__(self, io: imgui._IO, interface: KrakenInterface, closable: bool = False, flags=None) -> None:
+        if flags is None:
+            flags = 0
+
+        flags |= imgui.WINDOW_NO_BACKGROUND
+        flags |= imgui.WINDOW_ALWAYS_AUTO_RESIZE
+        flags |= imgui.WINDOW_NO_DECORATION
+        # flags |= imgui.WINDOW_NO_BRING_TO_FRONT_ON_FOCUS
+
+        super().__init__("Plot Window", io, closable, flags)
+        self.interface = interface
+
+        self.alt_data = np.zeros(self.MAX_PLOT_VALUES, dtype=np.float32)
+        self.offset_index = 0
+        self.num_values = 0
+
+    def add_data(self, altitude: float):
+        if self.offset_index == self.MAX_PLOT_VALUES:
+            self.offset_index = 0
+
+        self.alt_data[self.offset_index] = altitude
+        self.offset_index += 1
+
+        if self.num_values < self.MAX_PLOT_VALUES:
+            self.num_values += 1
+
+    def drawContents(self):
+        max_width = imgui.get_content_region_available_width()
+        imgui.plot_lines("##Altitude", self.alt_data, overlay_text="Altitude",
+                         scale_min=0, values_offset=self.offset_index, values_count=self.num_values,
+                         graph_size=(max_width, 150))

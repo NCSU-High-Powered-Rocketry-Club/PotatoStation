@@ -11,7 +11,11 @@ from . import windows
 
 
 class KrakenState(msgspec.Struct):
-    altitude: float
+    altitude: float = 0.0
+    orient_x: float = 0.0
+    orient_y: float = 0.0
+    orient_z: float = 0.0
+    motor_power: float = 0.0
 
 
 class KrakenInterface(MainInterface):
@@ -44,8 +48,12 @@ class KrakenInterface(MainInterface):
         )
         self.listen_thread_2 = Thread(
             target=self.serial_listen,
-            args=(self.serial_1,)
+            args=(self.serial_2,)
         )
+
+        # Set up data storage
+        self.state = KrakenState()
+        self.current_time = time.time()
 
         # Start da threados
         self.listen_thread_1.start()
@@ -58,6 +66,8 @@ class KrakenInterface(MainInterface):
     def drawGUI(self):
         # Draw the background logo and version stuff
         super().drawGUI()
+
+        self.current_time = time.time()
 
         display_size = self.io.display_size
 
@@ -87,6 +97,12 @@ class KrakenInterface(MainInterface):
         while self.read_serial:
             data = self._readline(serial_conn, b";")
 
+            if data == b"":
+                continue
+
+            if data == b";":
+                continue
+
             # Echo to the other serial (so the latch and SAIL both receive stuff the other sent)
             if serial_conn is self.serial_1:
                 self.serial_2.write(data)
@@ -95,25 +111,28 @@ class KrakenInterface(MainInterface):
 
             data = data.decode('ascii', errors="ignore")
 
-            # Remove that semicolon
+            # Remove the semicolon
             data = data[:-1]
 
             # Do stuff with data
-            if data != "":
-                self.serial_text.append(f"{data}\n")
-                self.serial_window.just_updated = True
-                try:
-                    self.process_data(data)
-                except Exception as e:
-                    print(e)
-                    print(f"Error on processing data {data}")
+            self.serial_text.append(f"{data}\n")
+            self.serial_window.just_updated = True
+            try:
+                self.process_data(data)
+            except Exception as e:
+                print(e)
+                print(f"Error on processing data {data}")
 
             time.sleep(0.001)
 
     def process_data(self, data: str):
         if data.startswith("ALT "):
             alt = float(data.split()[1])
-            self.altitude_estimate = alt
+            self.state.altitude = alt
+
+        elif data.startswith("MOTOR "):
+            power = float(data.split()[1])
+            self.state.motor_power = power
 
     def _readline(self, serial: serial.Serial, eol: bytes) -> bytes:
         """

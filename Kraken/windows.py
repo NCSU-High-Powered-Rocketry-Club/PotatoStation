@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
+import time
 
 import numpy as np
 import imgui
@@ -106,6 +107,8 @@ class PlotWindow(GUIWindow):
 
     MAX_PLOT_VALUES = 700
 
+    PLOT_UPDATE_TIME_S = 0.7
+
     def __init__(self, io: imgui._IO, interface: KrakenInterface, closable: bool = False, flags=None) -> None:
         if flags is None:
             flags = 0
@@ -122,6 +125,8 @@ class PlotWindow(GUIWindow):
         self.offset_index = 0
         self.num_values = 0
 
+        self.last_graph_update = interface.current_time
+
     def add_data(self, altitude: float):
         if self.offset_index == self.MAX_PLOT_VALUES:
             self.offset_index = 0
@@ -133,6 +138,10 @@ class PlotWindow(GUIWindow):
             self.num_values += 1
 
     def drawContents(self):
+        if (self.interface.current_time - self.last_graph_update) > self.PLOT_UPDATE_TIME_S:
+            self.add_data(self.interface.state.altitude)
+            self.last_graph_update = self.interface.current_time
+
         max_width = imgui.get_content_region_available_width()
         imgui.plot_lines("##Altitude", self.alt_data, overlay_text="Altitude",
                          scale_min=0, values_offset=self.offset_index, values_count=self.num_values,

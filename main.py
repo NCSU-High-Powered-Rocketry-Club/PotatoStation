@@ -18,7 +18,7 @@ parser.add_argument("port_2", type=str,
                     help="Another connected XBee or Arduino COM port")
 
 parser.add_argument("-f", "--fullscreen", action="store_true",
-                    help="Launch interface in full screen mode")
+                    help="Launch interface in full screen mode (borderless)")
 
 args = parser.parse_args()
 

@@ -12,10 +12,10 @@ from . import windows
 
 class KrakenState(msgspec.Struct):
     altitude: float = 0.0
-    orient_x: float = 0.0
-    orient_y: float = 0.0
-    orient_z: float = 0.0
     motor_power: float = 0.0
+    latch_open: bool = False
+    latch_heartbeat: float = 0.0
+    sail_heartbeat: float = 0.0
 
 
 class KrakenInterface(MainInterface):
@@ -82,7 +82,7 @@ class KrakenInterface(MainInterface):
 
         imgui.set_next_window_size(0.55 * display_size.x, -1, imgui.ALWAYS)
         imgui.set_next_window_position(
-            0.5 * display_size.x, 0.0 * display_size.y, imgui.ALWAYS, 0.5, 0.0)
+            0.5 * display_size.x, 0.04 * display_size.y, imgui.ALWAYS, 0.5, 0.0)
         self.plot_window.drawWindow()
 
     def serial_listen(self, serial_conn: serial.Serial):
@@ -129,10 +129,19 @@ class KrakenInterface(MainInterface):
         if data.startswith("ALT "):
             alt = float(data.split()[1])
             self.state.altitude = alt
+            # Set the heartbeat since received from sail
+            self.state.sail_heartbeat = self.current_time
 
         elif data.startswith("MOTOR "):
             power = float(data.split()[1])
             self.state.motor_power = power
+            # Set the heartbeat since received from sail
+            self.state.sail_heartbeat = self.current_time
+
+        elif data.startswith("LATCH "):
+            latch_state = int(data.split()[1])
+            self.state.latch_open = (latch_state == 1)
+            self.state.latch_heartbeat = self.current_time
 
     def _readline(self, serial: serial.Serial, eol: bytes) -> bytes:
         """

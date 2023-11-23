@@ -51,6 +51,9 @@ class SerialWindow(GUIWindow):
 
 
 class ButtonPanel(GUIWindow):
+
+    HEART_RED_TIME_S = 2.0
+
     def __init__(self, io: imgui._IO, interface: KrakenInterface, closable: bool = False, flags=None) -> None:
         if flags is None:
             flags = 0
@@ -62,24 +65,50 @@ class ButtonPanel(GUIWindow):
         flags |= imgui.WINDOW_NO_BRING_TO_FRONT_ON_FOCUS
 
         super().__init__("ButtonPanel", io, closable, flags)
-        self.pushed = False
+
         self.interface = interface
         self.armed = False
 
     def drawContents(self):
-        self.pushed = imgui.button("PRESSA DA BUTTON", 200, 200)
+        state = self.interface.state
 
-        if self.pushed:
-            self.interface.send_data("a")
+        imgui.dummy(200, -1)
+        with imgui.font(self.interface.bigger_icon_font):
+
+            sail_color = ((1.0, 0.0, 0.0) if (self.interface.current_time - state.sail_heartbeat) >
+                          self.HEART_RED_TIME_S else (0.0, 1.0, 0.0))
+
+            latch_color = ((1.0, 0.0, 0.0) if (self.interface.current_time - state.latch_heartbeat) >
+                           self.HEART_RED_TIME_S else (0.0, 1.0, 0.0))
+
+            imgui.text_colored("\ueae6", *sail_color)  # \uea6d
+            imgui.same_line()
+            imgui.text_colored("\ue915", *latch_color)
 
         if self.armed:
             color = (0.0, 1.0, 1.0)
         else:
             color = (1.0, 0.0, 0.0)
 
-        imgui.align_text_to_frame_padding()
+        imgui.text("Latch: ")
+        imgui.same_line()
+        if state.latch_open:
+            imgui.text_colored("OPEN", 0.7, 0, 1.0)
+        else:
+            imgui.text_colored("CLOSED", 0.0, 1.0, 1.0)
+
+        # imgui.separator()
+        # imgui.dummy(-1, -1)
+
+        imgui.text(f"Altitude: {state.altitude:.1f}m")
+        imgui.text(f"Motor power: {state.motor_power:.1f}%")
+
+        # imgui.separator()
+        # imgui.dummy(-1, -1)
+
         imgui.text("Status: ")
         imgui.same_line()
+
         with imgui.colored(imgui.COLOR_TEXT, *color):
             if self.armed:
                 imgui.text("ARMED")
@@ -107,7 +136,7 @@ class PlotWindow(GUIWindow):
 
     MAX_PLOT_VALUES = 700
 
-    PLOT_UPDATE_TIME_S = 0.7
+    PLOT_UPDATE_TIME_S = 0.1
 
     def __init__(self, io: imgui._IO, interface: KrakenInterface, closable: bool = False, flags=None) -> None:
         if flags is None:
@@ -122,16 +151,20 @@ class PlotWindow(GUIWindow):
         self.interface = interface
 
         self.alt_data = np.zeros(self.MAX_PLOT_VALUES, dtype=np.float32)
+        self.motor_data = np.zeros(self.MAX_PLOT_VALUES, dtype=np.float32)
+
         self.offset_index = 0
         self.num_values = 0
 
         self.last_graph_update = interface.current_time
 
-    def add_data(self, altitude: float):
+    def update_data(self):
         if self.offset_index == self.MAX_PLOT_VALUES:
             self.offset_index = 0
 
-        self.alt_data[self.offset_index] = altitude
+        self.alt_data[self.offset_index] = self.interface.state.altitude
+        self.motor_data[self.offset_index] = self.interface.state.motor_power
+
         self.offset_index += 1
 
         if self.num_values < self.MAX_PLOT_VALUES:
@@ -139,10 +172,14 @@ class PlotWindow(GUIWindow):
 
     def drawContents(self):
         if (self.interface.current_time - self.last_graph_update) > self.PLOT_UPDATE_TIME_S:
-            self.add_data(self.interface.state.altitude)
+            self.update_data()
             self.last_graph_update = self.interface.current_time
 
         max_width = imgui.get_content_region_available_width()
         imgui.plot_lines("##Altitude", self.alt_data, overlay_text="Altitude",
                          scale_min=0, values_offset=self.offset_index, values_count=self.num_values,
                          graph_size=(max_width, 150))
+
+        imgui.plot_lines("##MotorPower", self.motor_data, overlay_text="Motor Power",
+                         scale_min=0, values_offset=self.offset_index, values_count=self.num_values,
+                         graph_size=(max_width, 150), scale_max=100)

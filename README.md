@@ -3,6 +3,8 @@
 This is the repository for the PotatoStation ground control software, which is a multi-purpose
 ground control GUI slash control system for a variety of payloads for the NASA Student Launch Challenge.
 
+> Tested on Windows
+
 ## Setting Up Your Python Venv
 
 > Note: These commands are for Linux, on Windows simply ensure you have python installed and in your system path. 

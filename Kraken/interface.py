@@ -145,7 +145,7 @@ class KrakenInterface(MainInterface):
             self.state.latch_heartbeat = self.current_time
 
         elif data.startswith("MSG "):
-            self.message_text.append(f"{data.split()[1]}\n")
+            self.message_text.append(f"{data[4:]}\n")
             self.serial_window.just_updated = True
 
     def _readline(self, serial: serial.Serial, eol: bytes) -> bytes:

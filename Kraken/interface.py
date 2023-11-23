@@ -33,13 +33,14 @@ class KrakenInterface(MainInterface):
 
         # Cool deque to store previously-received data for serial monitor
         self.serial_text = deque([], maxlen=self.MESSAGE_STORE_CAP)
+        self.message_text = deque([], maxlen=self.MESSAGE_STORE_CAP)
         self.read_serial = True
 
         # Make the serial connections
         self.serial_1 = serial.Serial(
-            serial_port_1, baudrate, timeout=self.SERIAL_TIMEOUT_S)
+            serial_port_1, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0)
         self.serial_2 = serial.Serial(
-            serial_port_2, baudrate, timeout=self.SERIAL_TIMEOUT_S)
+            serial_port_2, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0)
 
         # Make two threads to listen to incoming data
         self.listen_thread_1 = Thread(
@@ -143,6 +144,11 @@ class KrakenInterface(MainInterface):
             self.state.latch_open = (latch_state == 1)
             self.state.latch_heartbeat = self.current_time
 
+        elif data.startswith("MSG "):
+            msg = data.split()[1]
+            self.message_text.append(f"{msg}\n")
+            self.serial_window.just_updated = True
+
     def _readline(self, serial: serial.Serial, eol: bytes) -> bytes:
         """
         Taken almost wholesale from 
@@ -176,6 +182,7 @@ class KrakenInterface(MainInterface):
 
         self.serial_window.just_updated = True
         self.serial_text.append(f"{data}\n")
+        self.message_text.append(f"{data}\n")
 
     def shutdownGUI(self):
         super().shutdownGUI()

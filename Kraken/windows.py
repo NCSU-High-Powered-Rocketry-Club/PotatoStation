@@ -20,9 +20,23 @@ class SerialWindow(GUIWindow):
         self.just_updated = False
         self.just_updated_2 = False
 
+        self.show_msg_stream = False
+
     def drawContents(self):
+
+        with imgui.begin_tab_bar("SerialTabs") as tab_bar:
+            with imgui.begin_tab_item("Messages") as msg:
+                if msg.selected:
+                    self.show_msg_stream = False
+            with imgui.begin_tab_item("Stream") as strm:
+                if strm.selected:
+                    self.show_msg_stream = True
+
         with imgui.begin_child("##OldTextChild", height=-50, border=True):
-            imgui.text("".join(self.interface.serial_text))
+            if self.show_msg_stream:
+                imgui.text("".join(self.interface.serial_text))
+            else:
+                imgui.text("".join(self.interface.message_text))
 
             if self.just_updated_2:
                 imgui.set_scroll_y(imgui.get_scroll_max_y())

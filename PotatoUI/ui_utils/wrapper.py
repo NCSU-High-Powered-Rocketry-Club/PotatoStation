@@ -60,6 +60,21 @@ class GLFWImguiWrapper:
         glfw.poll_events()
         backend.process_inputs()
 
+        smooth_scroll_speed = 8.0
+        scroll_amount = 1.0
+        scroll_energy = 0.0
+        self.io.mouse_wheel *= scroll_amount  # Scroll multiplier / amount
+
+        # Smooth scrolling
+        scroll_energy += self.io.mouse_wheel
+        if abs(scroll_energy) > 0.1:  # Scrolling threshold
+            scroll_now = scroll_energy * self.io.delta_time * smooth_scroll_speed
+            scroll_energy -= scroll_now
+        else:
+            scroll_now = 0.0
+            scroll_energy = 0.0
+        self.io.mouse_wheel = scroll_now
+
         imgui.new_frame()
 
         self.drawGUI()

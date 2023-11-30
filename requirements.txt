@@ -4,3 +4,4 @@ pillow
 tomli
 pyserial
 msgspec
+filterpy

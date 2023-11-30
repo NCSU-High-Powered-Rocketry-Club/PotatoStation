@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING
 import time
 
 import numpy as np
+from filterpy.kalman import KalmanFilter
+from filterpy.common import Q_discrete_white_noise
 import imgui
 from PotatoUI import GUIWindow
 
@@ -145,6 +147,19 @@ class ButtonPanel(GUIWindow):
                     if deploy:
                         self.interface.send_data("deploy")
 
+                with imgui.colored(imgui.COLOR_BUTTON_HOVERED, 0.9, 0.1, 0.0):
+                    if imgui.button("KILL", -1):
+                        imgui.open_popup("###kill-popup")
+                imgui.same_line()
+                with imgui.begin_popup_modal("###kill-popup") as kill_popup:
+                    if kill_popup.opened:
+                        imgui.text("Are you sure????")
+                        if imgui.button("YESSS", -1):
+                            self.interface.send_data("KILL")
+                            imgui.close_current_popup()
+                        if imgui.button("nah", -1):
+                            imgui.close_current_popup()
+
 
 class PlotWindow(GUIWindow):
 
@@ -166,6 +181,22 @@ class PlotWindow(GUIWindow):
 
         self.alt_data = np.zeros(self.MAX_PLOT_VALUES, dtype=np.float32)
         self.motor_data = np.zeros(self.MAX_PLOT_VALUES, dtype=np.float32)
+        self.velo_estimates = np.zeros(self.MAX_PLOT_VALUES, dtype=np.float32)
+
+        R, Q = 1.09, 0.89  # 0.09#0.08
+        dt = self.PLOT_UPDATE_TIME_S
+
+        kf = KalmanFilter(dim_x=2, dim_z=1)
+        kf.x = np.zeros(2)
+        kf.P *= np.array([[100, 0], [0, 1]])
+        kf.R *= R
+        kf.Q = Q_discrete_white_noise(2, dt, Q)
+        kf.F = np.array([[1., dt],
+                        [0., 1]])
+        kf.H = np.array([[1., 0]])
+        kf.alpha = 1.215
+
+        self.kalman_filter = kf
 
         self.offset_index = 0
         self.num_values = 0
@@ -178,6 +209,11 @@ class PlotWindow(GUIWindow):
 
         self.alt_data[self.offset_index] = self.interface.state.altitude
         self.motor_data[self.offset_index] = self.interface.state.motor_power
+
+        self.kalman_filter.predict()
+        self.kalman_filter.update(self.interface.state.altitude)
+
+        self.velo_estimates[self.offset_index] = self.kalman_filter.x[1]
 
         self.offset_index += 1
 
@@ -192,6 +228,10 @@ class PlotWindow(GUIWindow):
         max_width = imgui.get_content_region_available_width()
         imgui.plot_lines("##Altitude", self.alt_data, overlay_text="Altitude",
                          scale_min=0, values_offset=self.offset_index, values_count=self.num_values,
+                         graph_size=(max_width, 150))
+
+        imgui.plot_lines("##Velocity", self.velo_estimates, overlay_text="Velocity Estimate",
+                         values_offset=self.offset_index, values_count=self.num_values,
                          graph_size=(max_width, 150))
 
         imgui.plot_lines("##MotorPower", self.motor_data, overlay_text="Motor Power",

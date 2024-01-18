@@ -24,7 +24,8 @@ class KrakenInterface(MainInterface):
 
     SERIAL_TIMEOUT_S = 2
 
-    def __init__(self, name: str, width: int, height: int, serial_port_1, serial_port_2, baudrate=9600, font_path=None, font_size=14, scaling_factor=1, **kwargs):
+    def __init__(self, name: str, width: int, height: int, serial_port_1, serial_port_2=None,
+                 baudrate=9600, font_path=None, font_size=14, scaling_factor=1, **kwargs):
         """
         this is all probably over-complicated tbh
         """
@@ -39,18 +40,24 @@ class KrakenInterface(MainInterface):
         # Make the serial connections
         self.serial_1 = serial.Serial(
             serial_port_1, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0)
-        self.serial_2 = serial.Serial(
-            serial_port_2, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0)
+
+        self.has_serial_2 = serial_port_2 is not None
+
+        if self.has_serial_2:
+            self.serial_2 = serial.Serial(
+                serial_port_2, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0)
 
         # Make two threads to listen to incoming data
         self.listen_thread_1 = Thread(
             target=self.serial_listen,
             args=(self.serial_1,)
         )
-        self.listen_thread_2 = Thread(
-            target=self.serial_listen,
-            args=(self.serial_2,)
-        )
+
+        if self.has_serial_2:
+            self.listen_thread_2 = Thread(
+                target=self.serial_listen,
+                args=(self.serial_2,)
+            )
 
         # Set up data storage
         self.state = KrakenState()
@@ -58,7 +65,9 @@ class KrakenInterface(MainInterface):
 
         # Start da threados
         self.listen_thread_1.start()
-        self.listen_thread_2.start()
+
+        if serial_port_2:
+            self.listen_thread_2.start()
 
         self.serial_window = windows.SerialWindow(self.io, self)
         self.button_panel = windows.ButtonPanel(self.io, self)
@@ -179,7 +188,8 @@ class KrakenInterface(MainInterface):
             data (str): Input data to send
         """
         self.serial_1.write((data + ";").encode('ascii'))
-        self.serial_2.write((data + ";").encode('ascii'))
+        if self.has_serial_2:
+            self.serial_2.write((data + ";").encode('ascii'))
 
         self.serial_window.just_updated = True
         self.serial_text.append(f"{data}\n")
@@ -189,4 +199,5 @@ class KrakenInterface(MainInterface):
         super().shutdownGUI()
         self.read_serial = False
         self.serial_1.close()
-        self.serial_2.close()
+        if self.has_serial_2:
+            self.serial_2.close()

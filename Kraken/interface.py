@@ -104,11 +104,12 @@ class KrakenInterface(MainInterface):
             if data == b";":
                 continue
 
-            # Echo to the other serial (so the latch and SAIL both receive stuff the other sent)
-            if serial_conn is self.serial_1:
-                self.serial_2.write(data)
-            else:
-                self.serial_1.write(data)
+            # Echoing disabled as this is not needed atm
+            # # Echo to the other serial (so the latch and SAIL both receive stuff the other sent)
+            # if serial_conn is self.serial_1:
+            #     self.serial_2.write(data)
+            # else:
+            #     self.serial_1.write(data)
 
             data = data.decode('ascii', errors="ignore")
 
@@ -124,7 +125,8 @@ class KrakenInterface(MainInterface):
                 print(e)
                 print(f"Error on processing data {data}")
 
-            time.sleep(0.001)
+            # Avoid hogging thread time
+            time.sleep(0.0001)
 
     def process_data(self, data: str):
         if data.startswith("ALT "):

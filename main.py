@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description=msg)
 parser.add_argument("port_1", type=str,
                     help="Connected XBee or Arduino COM port")
 
-parser.add_argument("port_2", type=str,
+parser.add_argument("--port_2", type=str, default=None,
                     help="Another connected XBee or Arduino COM port")
 
 parser.add_argument("-f", "--fullscreen", action="store_true",

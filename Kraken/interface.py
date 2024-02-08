@@ -24,13 +24,26 @@ class KrakenInterface(MainInterface):
 
     SERIAL_TIMEOUT_S = 2
 
-    def __init__(self, name: str, width: int, height: int, serial_port_1, serial_port_2=None,
-                 baudrate=9600, font_path=None, font_size=14, scaling_factor=1, **kwargs):
+    def __init__(
+        self,
+        name: str,
+        width: int,
+        height: int,
+        serial_port_1,
+        serial_port_2=None,
+        baudrate=9600,
+        font_path=None,
+        font_size=14,
+        scaling_factor=1,
+        **kwargs,
+    ):
         """
         this is all probably over-complicated tbh
         """
 
-        super().__init__(name, width, height, font_path, font_size, scaling_factor, **kwargs)
+        super().__init__(
+            name, width, height, font_path, font_size, scaling_factor, **kwargs
+        )
 
         # Cool deque to store previously-received data for serial monitor
         self.serial_text = deque([], maxlen=self.MESSAGE_STORE_CAP)
@@ -39,24 +52,22 @@ class KrakenInterface(MainInterface):
 
         # Make the serial connections
         self.serial_1 = serial.Serial(
-            serial_port_1, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0)
+            serial_port_1, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0
+        )
 
         self.has_serial_2 = serial_port_2 is not None
 
         if self.has_serial_2:
             self.serial_2 = serial.Serial(
-                serial_port_2, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0)
+                serial_port_2, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0
+            )
 
         # Make two threads to listen to incoming data
-        self.listen_thread_1 = Thread(
-            target=self.serial_listen,
-            args=(self.serial_1,)
-        )
+        self.listen_thread_1 = Thread(target=self.serial_listen, args=(self.serial_1,))
 
         if self.has_serial_2:
             self.listen_thread_2 = Thread(
-                target=self.serial_listen,
-                args=(self.serial_2,)
+                target=self.serial_listen, args=(self.serial_2,)
             )
 
         # Set up data storage
@@ -73,6 +84,8 @@ class KrakenInterface(MainInterface):
         self.button_panel = windows.ButtonPanel(self.io, self)
         self.plot_window = windows.PlotWindow(self.io, self)
 
+        self.motor_debugger = windows.MotorTesterWindow(self.io, self)
+
     def drawGUI(self):
         # Draw the background logo and version stuff
         super().drawGUI()
@@ -83,17 +96,23 @@ class KrakenInterface(MainInterface):
 
         imgui.set_next_window_size(250, 400, imgui.ONCE)
         imgui.set_next_window_position(
-            0 * display_size.x, 0.5 * display_size.y, imgui.ONCE, 0.0, 0.5)
+            0 * display_size.x, 0.5 * display_size.y, imgui.ONCE, 0.0, 0.5
+        )
         self.serial_window.drawWindow()
 
         imgui.set_next_window_position(
-            1 * display_size.x, 0 * display_size.y, imgui.ALWAYS, 1.0, 0.0)
+            1 * display_size.x, 0 * display_size.y, imgui.ALWAYS, 1.0, 0.0
+        )
         self.button_panel.drawWindow()
 
         imgui.set_next_window_size(0.55 * display_size.x, -1, imgui.ALWAYS)
         imgui.set_next_window_position(
-            0.5 * display_size.x, 0.04 * display_size.y, imgui.ALWAYS, 0.5, 0.0)
+            0.5 * display_size.x, 0.04 * display_size.y, imgui.ALWAYS, 0.5, 0.0
+        )
         self.plot_window.drawWindow()
+
+        imgui.set_next_window_size(250, 300, imgui.ONCE)
+        self.motor_debugger.drawWindow()
 
     def serial_listen(self, serial_conn: serial.Serial):
         """
@@ -120,7 +139,7 @@ class KrakenInterface(MainInterface):
             # else:
             #     self.serial_1.write(data)
 
-            data = data.decode('ascii', errors="ignore")
+            data = data.decode("ascii", errors="ignore")
 
             # Remove the semicolon
             data = data[:-1]
@@ -152,7 +171,7 @@ class KrakenInterface(MainInterface):
 
         elif data.startswith("LATCH "):
             latch_state = int(data.split()[1])
-            self.state.latch_open = (latch_state == 1)
+            self.state.latch_open = latch_state == 1
             self.state.latch_heartbeat = self.current_time
 
         elif data.startswith("MSG "):
@@ -161,7 +180,7 @@ class KrakenInterface(MainInterface):
 
     def _readline(self, serial: serial.Serial, eol: bytes) -> bytes:
         """
-        Taken almost wholesale from 
+        Taken almost wholesale from
         https://stackoverflow.com/questions/16470903/pyserial-2-6-specify-end-of-line-in-readline
 
         Modified so it actually blocks until fully read incoming data rather than receiving a
@@ -180,16 +199,16 @@ class KrakenInterface(MainInterface):
 
     def send_data(self, data: str):
         """
-        Function to send data to both of the serial ports. 
+        Function to send data to both of the serial ports.
         Will append a semicolon at the end, so you don't need to add one ahead of time.
         Also updates the serial monitor.
 
         Args:
             data (str): Input data to send
         """
-        self.serial_1.write((data + ";").encode('ascii'))
+        self.serial_1.write((data + ";").encode("ascii"))
         if self.has_serial_2:
-            self.serial_2.write((data + ";").encode('ascii'))
+            self.serial_2.write((data + ";").encode("ascii"))
 
         self.serial_window.just_updated = True
         self.serial_text.append(f"{data}\n")

@@ -193,6 +193,9 @@ class ButtonPanel(GUIWindow):
 
                 if imgui.button("Echo"):
                     self.interface.send_data("echo")
+                imgui.same_line()
+                if imgui.button("Toggle sensors"):
+                    self.interface.send_data("toggle")
 
 
 class PlotWindow(GUIWindow):

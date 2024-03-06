@@ -14,11 +14,9 @@ try:
         conn2.read_all()
 
         conn.write((f"ALT {100*(math.sin(val/2) + 1):.3f};").encode("ascii"))
-        conn.write((f"MOTOR {(math.sin(val/2)+1) * 50:.3f};").encode("ascii"))
-        if (math.sin(val/2) > 0):
-            conn2.write((f"LATCH 1;").encode("ascii"))
-        else:
-            conn2.write((f"LATCH 0;").encode("ascii"))
+        conn.write((f"MTR {(math.sin(val/2)+1) * 50:.3f};").encode("ascii"))
+        conn.write((f"TEMP {(math.sin(val/2)+1) * 50:.3f};").encode("ascii"))
+        conn.write((f"VELO {(math.sin(val/2)+1) * 50:.3f};").encode("ascii"))
 
         if (time.time() - curtime) > 2:
             conn2.write((f"MSG hi;").encode("ascii"))

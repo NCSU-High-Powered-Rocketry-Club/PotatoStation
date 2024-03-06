@@ -11,33 +11,50 @@ msg = "Very Cool Ground Station Software"
 
 parser = argparse.ArgumentParser(description=msg)
 
-parser.add_argument("port_1", type=str,
-                    help="Connected XBee or Arduino COM port")
+parser.add_argument(
+    "port_1",
+    type=str,
+    help="Connected XBee or Arduino COM port",
+)
 
-parser.add_argument("--port_2", type=str, default=None,
-                    help="Another connected XBee or Arduino COM port")
+parser.add_argument(
+    "--port_2",
+    type=str,
+    default=None,
+    help="Another connected XBee or Arduino COM port",
+)
 
-parser.add_argument("-f", "--fullscreen", action="store_true",
-                    help="Launch interface in full screen mode (borderless)")
+parser.add_argument(
+    "-f",
+    "--fullscreen",
+    action="store_true",
+    help="Launch interface in full screen mode (borderless)",
+)
 
 args = parser.parse_args()
 
 
 def main(args):
 
-    ui = KrakenInterface("Kraken Control Panel", 1280, 720,
-                         args.port_1, args.port_2, framerate=FRAMERATE,
-                         fullscreen=args.fullscreen)
+    ui = KrakenInterface(
+        "Kraken Control Panel",
+        1280,
+        720,
+        args.port_1,
+        args.port_2,
+        framerate=FRAMERATE,
+        fullscreen=args.fullscreen,
+    )
 
     try:
         while not ui.should_close:
-            ui.update()
+            ui.update_gui()
 
     except KeyboardInterrupt:
         pass
 
     finally:
-        ui.shutdownGUI()
+        ui.shutdown_gui()
 
 
 if __name__ == "__main__":

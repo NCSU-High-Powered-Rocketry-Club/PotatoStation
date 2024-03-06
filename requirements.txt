@@ -1,4 +1,5 @@
-imgui[glfw]
+glfw
+imgui_bundle
 numpy
 pillow
 tomli

@@ -4,7 +4,7 @@ import time
 
 import msgspec
 import serial
-import imgui
+from imgui_bundle import imgui, implot
 from PotatoUI import MainInterface
 
 from . import windows
@@ -12,9 +12,9 @@ from . import windows
 
 class KrakenState(msgspec.Struct):
     altitude: float = 0.0
+    velo_estimate: float = 0.0
     motor_power: float = 0.0
-    latch_open: bool = False
-    latch_heartbeat: float = 0.0
+    temperature: float = 0.0
     sail_heartbeat: float = 0.0
 
 
@@ -41,9 +41,16 @@ class KrakenInterface(MainInterface):
         this is all probably over-complicated tbh
         """
 
+        # Set up data storage
+        self.state = KrakenState()
+        self.start_time = time.time()
+        self.current_time = 0.0
+
         super().__init__(
             name, width, height, font_path, font_size, scaling_factor, **kwargs
         )
+
+        self.plot_context = implot.create_context()
 
         # Cool deque to store previously-received data for serial monitor
         self.serial_text = deque([], maxlen=self.MESSAGE_STORE_CAP)
@@ -54,65 +61,63 @@ class KrakenInterface(MainInterface):
         self.serial_1 = serial.Serial(
             serial_port_1, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0
         )
+        self.listen_thread_1 = Thread(target=self.serial_listen, args=(self.serial_1,))
 
         self.has_serial_2 = serial_port_2 is not None
 
-        if self.has_serial_2:
+        if serial_port_2:
             self.serial_2 = serial.Serial(
                 serial_port_2, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0
             )
-
-        # Make two threads to listen to incoming data
-        self.listen_thread_1 = Thread(target=self.serial_listen, args=(self.serial_1,))
-
-        if self.has_serial_2:
             self.listen_thread_2 = Thread(
                 target=self.serial_listen, args=(self.serial_2,)
             )
 
-        # Set up data storage
-        self.state = KrakenState()
-        self.current_time = time.time()
-
-        # Start da threados
+        # Start da threads
         self.listen_thread_1.start()
 
         if serial_port_2:
             self.listen_thread_2.start()
 
+    def setup_gui(self) -> None:
         self.serial_window = windows.SerialWindow(self.io, self)
         self.button_panel = windows.ButtonPanel(self.io, self)
         self.plot_window = windows.PlotWindow(self.io, self)
-
         self.motor_debugger = windows.MotorTesterWindow(self.io, self)
 
-    def drawGUI(self):
+    def draw(self) -> None:
         # Draw the background logo and version stuff
-        super().drawGUI()
+        super().draw()
 
-        self.current_time = time.time()
+        self.current_time = time.time() - self.start_time
 
         display_size = self.io.display_size
 
-        imgui.set_next_window_size(250, 400, imgui.ONCE)
-        imgui.set_next_window_position(
-            0 * display_size.x, 0.5 * display_size.y, imgui.ONCE, 0.0, 0.5
+        imgui.set_next_window_size((250, 400), imgui.Cond_.once)
+        imgui.set_next_window_pos(
+            (0 * display_size.x, 0.5 * display_size.y),
+            imgui.Cond_.once,
+            (0.0, 0.5),
         )
-        self.serial_window.drawWindow()
+        self.serial_window.draw_window()
 
-        imgui.set_next_window_position(
-            1 * display_size.x, 0 * display_size.y, imgui.ALWAYS, 1.0, 0.0
+        imgui.set_next_window_pos(
+            (1 * display_size.x, 0 * display_size.y),
+            imgui.Cond_.always,
+            (1.0, 0.0),
         )
-        self.button_panel.drawWindow()
+        self.button_panel.draw_window()
 
-        imgui.set_next_window_size(0.55 * display_size.x, -1, imgui.ALWAYS)
-        imgui.set_next_window_position(
-            0.5 * display_size.x, 0.04 * display_size.y, imgui.ALWAYS, 0.5, 0.0
+        imgui.set_next_window_size((0.55 * display_size.x, -1), imgui.Cond_.always)
+        imgui.set_next_window_pos(
+            (0.5 * display_size.x, 0.04 * display_size.y),
+            imgui.Cond_.always,
+            (0.5, 0.0),
         )
-        self.plot_window.drawWindow()
+        self.plot_window.draw_window()
 
-        imgui.set_next_window_size(250, 300, imgui.ONCE)
-        self.motor_debugger.drawWindow()
+        imgui.set_next_window_size((250, 300), imgui.Cond_.once)
+        self.motor_debugger.draw_window()
 
     def serial_listen(self, serial_conn: serial.Serial):
         """
@@ -163,16 +168,29 @@ class KrakenInterface(MainInterface):
             # Set the heartbeat since received from sail
             self.state.sail_heartbeat = self.current_time
 
-        elif data.startswith("MOTOR "):
+        elif data.startswith("MTR "):
             power = float(data.split()[1])
             self.state.motor_power = power
             # Set the heartbeat since received from sail
             self.state.sail_heartbeat = self.current_time
 
-        elif data.startswith("LATCH "):
-            latch_state = int(data.split()[1])
-            self.state.latch_open = latch_state == 1
-            self.state.latch_heartbeat = self.current_time
+        elif data.startswith("TEMP "):
+            temp = float(data.split()[1])
+            self.state.temperature = temp
+            # Set the heartbeat since received from sail
+            self.state.sail_heartbeat = self.current_time
+
+        elif data.startswith("VELO "):
+            velo = float(data.split()[1])
+            self.state.velo_estimate = velo
+            # Set the heartbeat since received from sail
+            self.state.sail_heartbeat = self.current_time
+
+        # Not going to be receiving any data from latch
+        # elif data.startswith("LATCH "):
+        #     latch_state = int(data.split()[1])
+        #     self.state.latch_open = latch_state == 1
+        #     self.state.latch_heartbeat = self.current_time
 
         elif data.startswith("MSG "):
             self.message_text.append(f"{data[4:]}\n")
@@ -214,8 +232,8 @@ class KrakenInterface(MainInterface):
         self.serial_text.append(f"{data}\n")
         self.message_text.append(f"{data}\n")
 
-    def shutdownGUI(self):
-        super().shutdownGUI()
+    def shutdown_gui(self):
+        super().shutdown_gui()
         self.read_serial = False
         self.serial_1.close()
         if self.has_serial_2:

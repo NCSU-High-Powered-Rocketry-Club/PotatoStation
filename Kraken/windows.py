@@ -174,18 +174,20 @@ class ButtonPanel(GUIWindow):
                 with imgui_ctx.push_style_color(
                     imgui.Col_.button_hovered, imgui.ImVec4(0.9, 0.1, 0.0, 1.0)
                 ):
-                    if imgui.button("KILL", (-1, 0)):
+                    if imgui.button("KILL", (-1, 40)):
                         imgui.open_popup("###kill-popup")
 
-                imgui.same_line()
                 with imgui_ctx.begin_popup_modal("###kill-popup") as kill_popup:
                     if kill_popup.visible:
                         imgui.text("Are you sure????")
                         if imgui.button("YESSS", (200, 200)):
-                            self.interface.send_data("KILL")
+                            self.interface.send_data("kill")
                             imgui.close_current_popup()
                         if imgui.button("nah", (200, 200)):
                             imgui.close_current_popup()
+
+                if imgui.button("Echo"):
+                    self.interface.send_data("echo")
 
 
 class PlotWindow(GUIWindow):

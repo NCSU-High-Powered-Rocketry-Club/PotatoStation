@@ -4,7 +4,7 @@ import time
 
 import msgspec
 import serial
-from imgui_bundle import imgui, implot
+from imgui_bundle import imgui, implot, imgui_ctx
 from PotatoUI import MainInterface
 
 from . import windows
@@ -84,6 +84,7 @@ class KrakenInterface(MainInterface):
         self.button_panel = windows.ButtonPanel(self.io, self)
         self.plot_window = windows.PlotWindow(self.io, self)
         self.motor_debugger = windows.MotorTesterWindow(self.io, self)
+        self.first = True
 
     def draw(self) -> None:
         # Draw the background logo and version stuff
@@ -93,13 +94,29 @@ class KrakenInterface(MainInterface):
 
         display_size = self.io.display_size
 
-        imgui.set_next_window_size((250, 400), imgui.Cond_.once)
+        imgui.set_next_window_size((280, 500), imgui.Cond_.once)
         imgui.set_next_window_pos(
             (0 * display_size.x, 0.5 * display_size.y),
             imgui.Cond_.once,
             (0.0, 0.5),
         )
+        node_id = imgui.get_id("dashboard_dockspace")
+        with imgui_ctx.begin("Dashboard", flags=imgui.WindowFlags_.no_docking):
+            imgui.dock_space(node_id, (0, 0))
+
+        if self.first:
+            imgui.internal.dock_builder_remove_node(node_id)
+            imgui.internal.dock_builder_add_node(
+                node_id, flags=imgui.DockNodeFlags_.no_docking_split
+            )
+
+            imgui.internal.dock_builder_dock_window("Motor Tester", node_id)
+            imgui.internal.dock_builder_dock_window("Serial Console", node_id)
+            imgui.internal.dock_builder_finish(node_id)
+            self.first = False
+
         self.serial_window.draw_window()
+        self.motor_debugger.draw_window()
 
         imgui.set_next_window_pos(
             (1 * display_size.x, 0 * display_size.y),
@@ -115,9 +132,6 @@ class KrakenInterface(MainInterface):
             (0.5, 0.0),
         )
         self.plot_window.draw_window()
-
-        imgui.set_next_window_size((250, 300), imgui.Cond_.once)
-        self.motor_debugger.draw_window()
 
     def serial_listen(self, serial_conn: serial.Serial):
         """

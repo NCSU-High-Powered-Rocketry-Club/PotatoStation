@@ -303,7 +303,7 @@ class MotorTesterWindow(GUIWindow):
         if flags is None:
             flags = 0
 
-        super().__init__("Motor test window", io, closable, flags)
+        super().__init__("Motor Tester", io, closable, flags)
         self.interface = interface
         self.current_slider_pwr = 0
 

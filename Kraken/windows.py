@@ -121,8 +121,11 @@ class ButtonPanel(GUIWindow):
             #     > self.HEART_RED_TIME_S
             #     else (0.0, 1.0, 0.0)
             # )
-
-            imgui.text_colored(imgui.ImVec4(*sail_color, 1.0), "\ueae6")  # \uea6d
+            icon_text = "\ueae6"
+            window_width = imgui.get_window_width()
+            text_width = imgui.calc_text_size(icon_text).x
+            imgui.set_cursor_pos_x((window_width - text_width) * 0.5)
+            imgui.text_colored(imgui.ImVec4(*sail_color, 1.0), icon_text)  # \uea6d
             # imgui.text_colored("\ue915", *latch_color)
 
         if self.armed:
@@ -142,6 +145,8 @@ class ButtonPanel(GUIWindow):
 
         imgui.text(f"Altitude: {state.altitude:.1f}m")
         imgui.text(f"Motor power: {state.motor_power:.1f}%")
+        imgui.text(f"Velocity Est.: {state.velo_estimate:.1f}m/s")
+        imgui.text(f"Temperature: {state.temperature:.1f} \u00B0C")
 
         # imgui.separator()
         # imgui.dummy(-1, -1)
@@ -256,7 +261,7 @@ class PlotWindow(GUIWindow):
 
         if implot.begin_plot("###AltitudeVeloPlot", flags=plot_flags):
             implot.setup_axes("", "", axis_flags, axis_flags)
-            implot.plot_line(
+            implot.plot_shaded(
                 "Altitude",
                 self.time_data,
                 self.alt_data,
@@ -280,7 +285,7 @@ class PlotWindow(GUIWindow):
                 self.motor_data,
                 offset=self.offset_index,
             )
-            implot.plot_line(
+            implot.plot_shaded(
                 "Temperature",
                 self.time_data,
                 self.temp_data,
@@ -290,6 +295,8 @@ class PlotWindow(GUIWindow):
 
         implot.pop_style_color()
         implot.pop_style_color()
+
+        # implot.show_demo_window()
 
 
 class MotorTesterWindow(GUIWindow):

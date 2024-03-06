@@ -258,6 +258,7 @@ class PlotWindow(GUIWindow):
 
         implot.push_style_color(implot.Col_.plot_bg, (0, 0, 0, 0.1))
         implot.push_style_color(implot.Col_.frame_bg, (0, 0, 0, 0.1))
+        implot.push_style_var(implot.StyleVar_.fill_alpha, 0.35)
 
         if implot.begin_plot("###AltitudeVeloPlot", flags=plot_flags):
             implot.setup_axes("", "", axis_flags, axis_flags)
@@ -295,7 +296,7 @@ class PlotWindow(GUIWindow):
 
         implot.pop_style_color()
         implot.pop_style_color()
-
+        implot.pop_style_var()
         # implot.show_demo_window()
 
 

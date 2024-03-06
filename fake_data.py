@@ -15,8 +15,8 @@ try:
 
         conn.write((f"ALT {100*(math.sin(val/2) + 1):.3f};").encode("ascii"))
         conn.write((f"MTR {(math.sin(val/2)+1) * 50:.3f};").encode("ascii"))
-        conn.write((f"TEMP {(math.sin(val/2)+1) * 50:.3f};").encode("ascii"))
-        conn.write((f"VELO {(math.sin(val/2)+1) * 50:.3f};").encode("ascii"))
+        conn.write((f"TEMP {(math.sin(val/4)+1) * 50:.3f};").encode("ascii"))
+        conn.write((f"VELO {(math.sin(val/2)) * 50:.3f};").encode("ascii"))
 
         if (time.time() - curtime) > 2:
             conn2.write((f"MSG hi;").encode("ascii"))

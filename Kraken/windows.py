@@ -197,10 +197,13 @@ class ButtonPanel(GUIWindow):
                 if imgui.button("Toggle sensors"):
                     self.interface.send_data("toggle")
 
+                if imgui.button("Toggle Camera"):
+                    self.interface.send_data("camera")
+
 
 class PlotWindow(GUIWindow):
 
-    MAX_PLOT_VALUES = 300
+    MAX_PLOT_VALUES = 700
 
     PLOT_UPDATE_TIME_S = 0.1
 

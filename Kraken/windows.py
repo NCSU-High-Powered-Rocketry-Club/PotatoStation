@@ -203,7 +203,7 @@ class ButtonPanel(GUIWindow):
 
 class PlotWindow(GUIWindow):
 
-    MAX_PLOT_VALUES = 700
+    MAX_PLOT_VALUES = 600
 
     PLOT_UPDATE_TIME_S = 0.1
 
@@ -319,26 +319,31 @@ class MotorTesterWindow(GUIWindow):
 
         super().__init__("Motor Tester", io, closable, flags)
         self.interface = interface
-        self.current_slider_pwr = 0
+        self.current_slider_pwr = 0.0
+
+    def set_power(self, power: float):
+        self.interface.send_data(f"DMTR {power:.1f}")
 
     def draw_contents(self):
         imgui.text("Set motor power:")
 
-        def set_power(power: int):
-            self.interface.send_data(f"DMTR {power}")
-
         imgui.set_next_item_width(-1)
-        _, self.current_slider_pwr = imgui.slider_int(
-            "###Power", self.current_slider_pwr, 0, 100
+        _, self.current_slider_pwr = imgui.slider_float(
+            "###Power",
+            self.current_slider_pwr,
+            0.0,
+            100.0,
+            format="%.1f",
+            flags=imgui.SliderFlags_.always_clamp,
         )
 
         if imgui.button("Set motor power", (-1, 0)):
-            set_power(self.current_slider_pwr)
+            self.set_power(self.current_slider_pwr)
 
         imgui.dummy((0, 10))
         imgui.separator()
         imgui.dummy((0, 10))
         for current_power in range(0, 101, 25):
             if imgui.button(f"{current_power}%", (-1, 30)):
-                set_power(current_power)
+                self.set_power(current_power)
                 self.current_slider_pwr = current_power

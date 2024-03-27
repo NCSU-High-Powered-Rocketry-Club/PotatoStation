@@ -232,7 +232,7 @@ class KrakenInterface(MainInterface):
 
         return bytes(line)
 
-    def serial_listen(self, serial_conn: serial.Serial):
+    def heartbeat(self):
         while self.send_heartbeat:
             self.send_data('heartbeat')
             time.sleep(0.1)

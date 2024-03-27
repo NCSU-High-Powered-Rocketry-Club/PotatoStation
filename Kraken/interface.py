@@ -56,12 +56,14 @@ class KrakenInterface(MainInterface):
         self.serial_text = deque([], maxlen=self.MESSAGE_STORE_CAP)
         self.message_text = deque([], maxlen=self.MESSAGE_STORE_CAP)
         self.read_serial = True
+        self.send_heartbeat = True
 
         # Make the serial connections
         self.serial_1 = serial.Serial(
             serial_port_1, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0
         )
         self.listen_thread_1 = Thread(target=self.serial_listen, args=(self.serial_1,))
+        self.heartbeat_thread = Thread(target=self.heartbeat)
 
         self.has_serial_2 = serial_port_2 is not None
 
@@ -75,6 +77,7 @@ class KrakenInterface(MainInterface):
 
         # Start da threads
         self.listen_thread_1.start()
+        self.heartbeat_thread.start()
 
         if serial_port_2:
             self.listen_thread_2.start()
@@ -229,6 +232,11 @@ class KrakenInterface(MainInterface):
 
         return bytes(line)
 
+    def heartbeat(self):
+        while self.send_heartbeat:
+            self.send_data('heartbeat')
+            time.sleep(0.1)
+
     def send_data(self, data: str):
         """
         Function to send data to both of the serial ports.
@@ -249,6 +257,7 @@ class KrakenInterface(MainInterface):
     def shutdown_gui(self):
         super().shutdown_gui()
         self.read_serial = False
+        self.send_heartbeat = False
         self.serial_1.close()
         if self.has_serial_2:
             self.serial_2.close()

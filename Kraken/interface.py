@@ -77,7 +77,7 @@ class KrakenInterface(MainInterface):
 
         # Start da threads
         self.listen_thread_1.start()
-        self.heartbeat_thread.start()
+        # self.heartbeat_thread.start()
 
         if serial_port_2:
             self.listen_thread_2.start()

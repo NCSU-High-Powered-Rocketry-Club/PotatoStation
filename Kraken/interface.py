@@ -235,7 +235,7 @@ class KrakenInterface(MainInterface):
     def heartbeat(self):
         while self.send_heartbeat:
             self.send_data("heartbeat")
-            time.sleep(0.250)
+            time.sleep(2.100)
 
     def send_data(self, data: str):
         """

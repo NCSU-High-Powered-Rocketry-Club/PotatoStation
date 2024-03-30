@@ -199,6 +199,8 @@ class ButtonPanel(GUIWindow):
 
                 if imgui.button("Toggle Camera"):
                     self.interface.send_data("camera")
+                if imgui.button("Zero Alitimiter"):
+                    self.interface.send_data("zeroalt")
 
 
 class PlotWindow(GUIWindow):

@@ -1,6 +1,6 @@
 import argparse
 import time
-from Spaceducks import SpaceduckInterface
+from Kraken import KrakenInterface
 
 
 # rough framerate, should be slightly higher due to render time
@@ -18,6 +18,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--port_2",
+    type=str,
+    default=None,
+    help="Another connected XBee or Arduino COM port",
+)
+
+parser.add_argument(
     "-f",
     "--fullscreen",
     action="store_true",
@@ -29,11 +36,12 @@ args = parser.parse_args()
 
 def main(args):
 
-    ui = SpaceduckInterface(
-        "Spaceduck Control Panel",
+    ui = KrakenInterface(
+        "Kraken Control Panel",
         1280,
         720,
         args.port_1,
+        args.port_2,
         framerate=FRAMERATE,
         fullscreen=args.fullscreen,
     )

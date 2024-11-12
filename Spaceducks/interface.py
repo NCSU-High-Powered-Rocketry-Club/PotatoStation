@@ -8,14 +8,8 @@ from imgui_bundle import imgui, implot, imgui_ctx
 from PotatoUI import MainInterface
 
 from . import windows
-from .state import SensorState, FlightStats, Message
-
-
-# class SpaceduckState(msgspec.Struct):
-#     altitude: float = 0.0
-#     velo_estimate: float = 0.0
-#     motor_power: float = 0.0
-#     temperature: float = 0.0
+from .shared.state import MESSAGE_TYPES, SensorState, FlightStats, Message
+from .shared.xbee_interface import XbeeInterface
 
 
 class SpaceduckInterface(MainInterface):
@@ -59,15 +53,12 @@ class SpaceduckInterface(MainInterface):
         self.read_serial = True
 
         # Make the serial connections
-        self.serial_1 = serial.Serial(
-            serial_port_1, baudrate, timeout=self.SERIAL_TIMEOUT_S, write_timeout=0
-        )
-        self.listen_thread_1 = Thread(target=self.serial_listen, args=(self.serial_1,))
+        self.xbee = XbeeInterface(serial_port_1, self.process_data)
 
-        self.decoder = msgspec.msgpack.Decoder(SensorState | Message)
+        self.decoder = msgspec.msgpack.Decoder(MESSAGE_TYPES)
+        self.encoder = msgspec.msgpack.Encoder()
 
-        # Start da threads
-        self.listen_thread_1.start()
+        self.xbee.start()
 
     def setup_gui(self) -> None:
         self.serial_window = windows.SerialWindow(self.io, self)
@@ -106,7 +97,6 @@ class SpaceduckInterface(MainInterface):
             self.first = False
 
         self.serial_window.draw_window()
-        # self.motor_debugger.draw_window()
 
         imgui.set_next_window_pos(
             (1 * display_size.x, 0 * display_size.y),
@@ -123,75 +113,16 @@ class SpaceduckInterface(MainInterface):
         )
         self.plot_window.draw_window()
 
-    def serial_listen(self, serial_conn: serial.Serial):
-        """
-        Listen thread for incoming data from the xbee/arduino
-
-        To avoid all kinds of newline wackiness, we use semicolons to separate data.
-        Since it's just a regular ascii character it's less prone to silliness from
-        protocols and such
-
-        """
-        while self.read_serial:
-            data = self._readline(serial_conn, b";")
-
-            if data == b"":
-                continue
-
-            if data == b";":
-                continue
-
-            # Echoing disabled as this is not needed atm
-            # # Echo to the other serial (so the latch and SAIL both receive stuff the other sent)
-            # if serial_conn is self.serial_1:
-            #     self.serial_2.write(data)
-            # else:
-            #     self.serial_1.write(data)
-
-            # Do stuff with data
-            self.serial_text.append(f"{data}\n")
-            self.serial_window.just_updated = True
-            try:
-                self.process_data(data)
-            except Exception as e:
-                print(e)
-                print(f"Error on processing data {data}")
-
-            # Avoid hogging thread time
-            time.sleep(0.0001)
-
-    def process_data(self, data: bytes):
-        decoded_data: Message | SensorState = self.decoder.decode(data)
-
-        if type(decoded_data) is Message:
-            self.message_text.append(f"{decoded_data.message}\n")
+    def process_data(self, data: MESSAGE_TYPES):
+        if type(data) is Message:
+            self.message_text.append(f"{data.message}\n")
             self.serial_window.just_updated = True
 
-        elif type(decoded_data) is SensorState:
-            self.state = decoded_data
+        elif type(data) is SensorState:
+            self.state = data
 
         # Set the heartbeat since received from sail
         self.heartbeat = self.current_time
-
-    def _readline(self, serial: serial.Serial, eol: bytes) -> bytes:
-        """
-        Taken almost wholesale from
-        https://stackoverflow.com/questions/16470903/pyserial-2-6-specify-end-of-line-in-readline
-
-        Modified so it actually blocks until fully read incoming data rather than receiving a
-        half-finished string because the incoming stream paused
-        """
-
-        leneol = len(eol)
-        line = bytearray()
-        while self.read_serial:
-            c = serial.read(1)
-            line += c
-            if line[-leneol:] == eol:
-                line = line.strip(eol)
-                break
-
-        return bytes(line)
 
     def send_data(self, data: str):
         """
@@ -202,13 +133,13 @@ class SpaceduckInterface(MainInterface):
         Args:
             data (str): Input data to send
         """
-        self.serial_1.write((data + ";").encode("ascii"))
+        self.xbee.send_data(Message(data))
 
         self.serial_window.just_updated = True
         self.serial_text.append(f"{data}\n")
         self.message_text.append(f"{data}\n")
 
     def shutdown_gui(self):
+        self.xbee.stop()
         super().shutdown_gui()
         self.read_serial = False
-        self.serial_1.close()

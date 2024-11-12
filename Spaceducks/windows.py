@@ -179,10 +179,10 @@ class ButtonPanel(GUIWindow):
                 if imgui.button("Echo"):
                     self.interface.send_data("echo")
                 imgui.same_line()
-                if imgui.button("Toggle sensors"):
-                    self.interface.send_data("toggle")
-                if imgui.button("Zero Altimeter"):
-                    self.interface.send_data("zeroalt")
+                if imgui.button("Transmit Now"):
+                    self.interface.send_data("!transmitnow")
+                if imgui.button("Switch to recover state (shutdown)"):
+                    self.interface.send_data("!recover")
 
 
 class PlotWindow(GUIWindow):
@@ -285,46 +285,3 @@ class PlotWindow(GUIWindow):
         implot.pop_style_color()
         implot.pop_style_var()
         # implot.show_demo_window()
-
-
-class MotorTesterWindow(GUIWindow):
-    def __init__(
-        self,
-        io: imgui._IO,
-        interface: SpaceduckInterface,
-        closable: bool = False,
-        flags=None,
-    ) -> None:
-        if flags is None:
-            flags = 0
-
-        super().__init__("Motor Tester", io, closable, flags)
-        self.interface = interface
-        self.current_slider_pwr = 0.0
-
-    def set_power(self, power: float):
-        self.interface.send_data(f"DMTR {power:.1f}")
-
-    def draw_contents(self):
-        imgui.text("Set motor power:")
-
-        imgui.set_next_item_width(-1)
-        _, self.current_slider_pwr = imgui.slider_float(
-            "###Power",
-            self.current_slider_pwr,
-            0.0,
-            100.0,
-            format="%.1f",
-            flags=imgui.SliderFlags_.always_clamp,
-        )
-
-        if imgui.button("Set motor power", (-1, 0)):
-            self.set_power(self.current_slider_pwr)
-
-        imgui.dummy((0, 10))
-        imgui.separator()
-        imgui.dummy((0, 10))
-        for current_power in range(0, 101, 25):
-            if imgui.button(f"{current_power}%", (-1, 30)):
-                self.set_power(current_power)
-                self.current_slider_pwr = current_power
